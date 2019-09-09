@@ -1,0 +1,100 @@
+{
+    "variables": {
+        "user": "root",
+        "password": "Dsen47lp,8HPst",
+        "hostname": "debian"
+    },
+
+    "builders":
+    [
+        {
+            "name": "debian9.4",
+            "type": "vmware-iso",
+            "iso_url":"/home/user/Downloads/debian-9.4.0-amd64-xfce-CD-1.iso",
+            "iso_checksum":"6715c8c0bedf77c8eef2e8732e117db6",
+            "iso_checksum_type":"md5",
+            "communicator": "ssh",
+            "floppy_files": [
+              "./preseed/debian94.cfg"
+            ],
+            "http_directory": "preseed",
+            "ssh_pty": "true",
+            "ssh_username": "{{user `user`}}",
+            "ssh_password": "{{user `password`}}",
+            "shutdown_command": "shutdown -P now",
+            "ssh_wait_timeout": "60m",
+            "boot_command": [
+              "<esc><wait>",
+              "install <wait>",
+              "auto=true <wait>",
+              "grub-installer/bootdev=/dev/sda <wait>",
+              "preseed/url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/debian94.cfg <wait>",
+              "preseed/url/checksum=cd722c3d3130c3b062dc2c342c55ce7e",
+              "<enter>"
+            ]
+        }
+    ],
+
+    "provisioners":
+    [
+
+        {
+            "type": "file",
+            "source": "./conf/repo/mirror_yandex_ru_debian.list",
+            "destination": "/tmp/mirror_yandex_ru_debian.list"
+        },
+
+        {
+            "type": "shell",
+            "inline": [
+              "/bin/bash /tmp/cronjob.sh"
+            ]
+        },
+
+        {
+            "type": "file",
+            "source": "./scripts/.bashrc",
+            "destination": "/tmp/.bashrc"
+        },
+
+        {
+            "type": "file",
+            "source": "./conf/repo/sources.list",
+            "destination": "/tmp/sources.list"
+        },
+
+        {
+            "type": "shell",
+            "inline": [
+              "cp /tmp/sources.list /etc/apt/sources.list",
+              "echo deb http://mirror.yandex.ru/debian stretch main non-free contrib >> /etc/apt/source.list",
+              "echo deb-src http://mirror.yandex.ru/debian stretch main non-free contrib >> /etc/apt/source.list",
+              "apt install -y dirmngr python3-pip jq python3-mysqldb python3-dialog python3-jinja2 python3-netifaces tcpdump dnsutils",
+              "pip3 install requests jinja2 netifaces dnspython",
+              "mkdir -p /opt/scripts",
+              "mkdir -p /opt/scripts/utils",
+              "mkdir -p /opt/scripts/utils/templates",
+              "apt install -y mysql-server python-pip python-etcd python-mysql.connector python-requests",
+              "chmod 755 -R /opt/scripts",
+              "clickhouse client -q \"create database vflow\"",
+              "echo \"ddg ALL=(ALL) NOPASSWD: ALL\" >> /etc/sudoers"
+						]
+        },
+
+        {
+            "type": "shell",
+            "inline": [
+              "sleep 100"
+            ]
+        },
+
+        {
+            "type": "shell",
+            "inline": [
+              "cp /tmp/.bashrc /home/ddg/.bashrc"
+            ]
+        }
+    ]
+}
+
+
